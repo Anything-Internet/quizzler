@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quizzler/questions.dart';
+import 'package:quizzler/game_brain.dart';
 
 void main() => runApp(Quizzler());
 
@@ -27,35 +27,19 @@ class QuizPage extends StatefulWidget {
 }
 
 class _QuizPageState extends State<QuizPage> {
-  List<Icon> scores = [];
-  List<Question> questions = loadQuestions();
-  int questionNumber = 0;
-  late int totalQuestions;
+  late GameBrain gameBrain;
+  late String currentQuestion;
+  late bool prevAnswerResult = true;
 
-  _QuizPageState() {
-    totalQuestions = questions.length;
-  }
-
-  scoreKeeper(bool userPickedAnswer) {
-    Icon correct = Icon(
-      Icons.check,
-      color: Colors.green,
-    );
-    Icon wrong = Icon(
-      Icons.close,
-      color: Colors.red,
-    );
+  scoreKeeper(bool userAnswer) {
+    prevAnswerResult = gameBrain.checkAnswer(userAnswer);
     setState(() {
-      if (userPickedAnswer == true) {
-        scores.add(correct);
-      } else {
-        scores.add(wrong);
-      }
-      questionNumber++;
-      if (questionNumber >= totalQuestions) {
-        questionNumber = 0;
-      }
+      currentQuestion=gameBrain.getQuestion();
     });
+  }
+  _QuizPageState() {
+    gameBrain = GameBrain();
+    currentQuestion = gameBrain.getQuestion();
   }
 
   @override
@@ -70,7 +54,7 @@ class _QuizPageState extends State<QuizPage> {
             padding: EdgeInsets.all(10.0),
             child: Center(
               child: Text(
-                questions[questionNumber].questionText,
+                currentQuestion,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 25.0,
@@ -95,10 +79,7 @@ class _QuizPageState extends State<QuizPage> {
                 ),
               ),
               onPressed: () {
-                if (questions[questionNumber].questionAnswer == true)
-                  scoreKeeper(true);
-                else
-                  scoreKeeper(false);
+                scoreKeeper(true);
               },
             ),
           ),
@@ -118,16 +99,13 @@ class _QuizPageState extends State<QuizPage> {
                   ),
                 ),
                 onPressed: () {
-                  if (questions[questionNumber].questionAnswer == false)
-                    scoreKeeper(true);
-                  else
-                    scoreKeeper(false);
+                  scoreKeeper(false);
                 }),
           ),
         ),
         Container(
           height: 50,
-          alignment: Alignment.topLeft,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             border: Border.all(
               color: Colors.blueAccent,
@@ -137,22 +115,72 @@ class _QuizPageState extends State<QuizPage> {
           ),
           margin: EdgeInsets.all(30.0),
           //color: Colors.blue,
-          child: Row(
-            children: [scoresBox(scores, context)],
+          child: scoresBox(),
+
           ),
-        ),
+
       ],
     );
   }
-}
 
-scoresBox(scores, context) {
-  int maxScores = (MediaQuery.of(context).size.width / 15).ceil();
-  return Flexible(
-    child: Wrap(
-      children: scores.length > maxScores
-          ? scores.sublist(scores.length - maxScores - 1, scores.length - 1)
-          : scores,
-    ),
-  );
+  scoresBox() {
+    Icon icon;
+
+    if(prevAnswerResult == true) {
+      icon = Icon(
+        Icons.check,
+        color: Colors.green,
+        size: 30,
+      );
+    } else {
+      icon = Icon(
+        Icons.close,
+        color: Colors.red,
+        size: 30,
+      );
+    }
+
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            icon,
+        Text(
+          "Correct: ",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+          ),
+        ),
+        Text(
+          gameBrain.questionsCorrectString,
+          style: TextStyle(
+            color: Colors.green,
+            fontSize: 20,
+          ),
+        ),
+        Text(
+          "Wrong: ",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+          ),
+        ),
+        Text(
+          gameBrain.questionsIncorrectString,
+          style: TextStyle(
+            color: Colors.redAccent,
+            fontSize: 20,
+          ),
+        ),
+        Text(
+          "Score: ${gameBrain.questionsCorrectPercentString}% ",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+          ),
+        ),
+      ]
+    );
+  }
 }
